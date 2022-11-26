@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "java",
+            "name": "Launch App",
+            "request": "launch",
+            "mainClass": "main.App",
+            "projectName": "bigBoss_bb8bc768"
+        },
+        {
             "name": "Java",
             "type": "java",
             "request": "launch",

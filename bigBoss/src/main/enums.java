@@ -42,4 +42,9 @@ public class enums {
         player,
         ai
     }
+
+    public enum responseTypeEnum {
+        fromServer,
+        toServer
+    }
 }

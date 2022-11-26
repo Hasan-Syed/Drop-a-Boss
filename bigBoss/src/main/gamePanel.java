@@ -64,11 +64,12 @@ public class gamePanel extends JPanel implements Runnable {
         this.addMouseListener(mouseH);
         this.addMouseMotionListener(mouseMotionH);
         setFocusable(true);
-        player = new Player(this, playerName); // Player
+        player = new Player(this, "unknown"); // Player
         hud = new HUD(this, player);
+
         try {
             multiplayer = new multiplayer("25.10.205.149", 6969, player);
-            multiplayer.run();
+            // multiplayer.run();
         } catch (UnknownHostException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -104,16 +105,9 @@ public class gamePanel extends JPanel implements Runnable {
         int drawCount = 0;
 
         while (gameThread != null) {
-            currentTime = System.nanoTime();
-            delta += (currentTime - lastTime) / drawInterval;
-            timer += currentTime - lastTime;
-            lastTime = currentTime;
-
-            if (delta >= 1) {
-                System.out.println(player.entityJson().toString());
+            if (multiplayer.playerConnect.isConnected()) {
                 multiplayer.toServerStr = player.entityJson().toString();
                 multiplayer.run();
-                System.out.print(multiplayer.serverReturn);
                 JSONObject serverInput = new JSONObject(multiplayer.serverReturn);
                 if (serverInput.has("playerUpdate")) {
                     boolean playerFound = false;
@@ -130,43 +124,59 @@ public class gamePanel extends JPanel implements Runnable {
                         multiplayerAIArray.add(remoteEntity);
                     }
                 }
-                // this.multiplayer.toServerStr = null;
-                // if (multiplayer.playerConnect.isConnected()) {
-                // this.multiplayer.toServerStr = this.player.entityJson().toString();
-                // this.multiplayer.run();
-                // }
-                //// Server Response
-                // if (isValid(multiplayer.serverReturn)) {
-                // JSONObject newEvent = new JSONObject(multiplayer.serverReturn);
-                // System.out.println(newEvent);
-                // } else {
-                // JSONArray newEvent = new JSONArray(multiplayer.serverReturn);
-                // System.out.println(newEvent);
-                // }
-                // int ID = newEvent.getInt("ID");
-                // if (newEvent.has("spawnNewEntity")) {
-                // System.out.println("new Player Spawned");
-                // multiplayerAIArray.add(new multiplayerBot(this, ID));
-                // }
-                // if (newEvent.has("playerUpdate")) {
-                // for (multiplayerBot remoteEntity : multiplayerAIArray) {
-                // if (remoteEntity.ID == ID) {
-                // remoteEntity.update(newEvent);
-                // }
-                // }
-                // }
+            }
 
-                update(); // update gameInformation
-                repaint(); // draw Updates
-                delta--;
-                drawCount++;
+            update(); // update gameInformation
+            repaint(); // draw Updates
+
+            try {
+                Thread.sleep(15);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
         }
-        if (timer >= 1000000000) {
-            System.out.println("FPS: " + drawCount);
-            drawCount = 0;
-            timer = 0;
-        }
+
+        // while (gameThread != null) {
+        // if (multiplayer.playerConnect.isConnected()) {
+        // multiplayer.toServerStr = player.entityJson().toString();
+        // multiplayer.run();
+        // JSONObject serverInput = new JSONObject(multiplayer.serverReturn);
+        // if (serverInput.has("playerUpdate")) {
+        // boolean playerFound = false;
+        // int ID = serverInput.getInt("ID");
+        // for (multiplayerBot remoteEntity : multiplayerAIArray) {
+        // if (remoteEntity.ID == ID) {
+        // remoteEntity.update(serverInput);
+        // playerFound = true;
+        // }
+        // }
+        // if (playerFound == false && ID != multiplayer.onlineID) {
+        // multiplayerBot remoteEntity = new multiplayerBot(this, ID);
+        // remoteEntity.update(serverInput);
+        // multiplayerAIArray.add(remoteEntity);
+        // }
+        // }
+        // }
+        //
+        // currentTime = System.nanoTime();
+        // delta += (currentTime - lastTime) / drawInterval;
+        // timer += currentTime - lastTime;
+        // lastTime = currentTime;
+        // //
+        // if (delta >= 1) {
+        //
+        // update(); // update gameInformation
+        // repaint(); // draw Updates
+        // delta--;
+        // drawCount++;
+        // }
+        // }
+        // if (timer >= 1000000000) {
+        // System.out.println("FPS: " + drawCount);
+        // drawCount = 0;
+        // timer = 0;
+        // }
     }
 
     public void update() {

@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class App extends Thread {
@@ -40,7 +39,7 @@ public class App extends Thread {
     }
 
     public void run() {
-        System.out.println(allPlayerEventsNew);
+        // System.out.println(allPlayerEventsNew);
     }
 
     public static void main(String[] args) throws Exception {

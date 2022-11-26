@@ -29,7 +29,7 @@ public class player extends Thread {
         this.toPlayer = new PrintWriter(playerClient.getOutputStream(), true);
         this.allPlayerEvents = playerEvents;
         this.mainClass = mainClass;
-        System.out.println("[Server Join]: " + player + " has joined as ID: '" + ID + "'");
+        logger(debugging.initiatingClient, "[Server Join]: " + player + " has joined as ID: '" + ID + "'");
         try {
             initializePlayer();
         } catch (IOException e) {
@@ -38,7 +38,7 @@ public class player extends Thread {
     }
 
     public void initializePlayer() throws IOException {
-        System.out.println("[Server Initialize ID: '" + ID + "']: Iniitializing Player");
+        logger(debugging.initiatingClient, "Initializing Player");
         toPlayer.println("Connection Established"); // Send Player Connection Established
         {
             // Now the player is going to Request its ID on the server \\
@@ -47,9 +47,10 @@ public class player extends Thread {
                 toPlayer.println(ID); // Send Player ID
             }
             // The Server will now Request the Initial Entity JSON from the Player
+            logger(debugging.fromClient, "Requesting Initial Entity");
             toPlayer.println("Initial Entity"); // Send Player Connection Established
             tempRead = fromPlayer.readLine();
-            System.out.println("Initial Read: " + tempRead);
+            logger(debugging.fromClient, tempRead);
             if (isValid(tempRead)) {
                 if (new JSONObject(tempRead).has("playerUpdate")) {
                     mainClass.allPlayerEventsNew.add(new JSONObject(tempRead));
@@ -58,10 +59,14 @@ public class player extends Thread {
                     allPlayerEvents.add(new JSONObject(tempRead));
                     JSONObject initialEntity = new JSONObject(tempRead).getJSONObject("playerUpdate");
                     playerName = initialEntity.getString("name");
-                    System.out.println(
-                            "[Server Initialize ID: '" + ID + "' or name: '" + playerName
-                                    + "']: Initial Setup Finished");
+                    logger(debugging.initiatingClient,
+                            "Initialized ID: '" + ID + "' as player name: '" + playerName + "'");
                 }
+            }
+            tempRead = fromPlayer.readLine().trim();
+            if (tempRead.equalsIgnoreCase("start")) {
+                logger(debugging.toClient, "Starting Transmission");
+                toPlayer.println("Starting");
                 this.start();
             }
         }
@@ -76,27 +81,57 @@ public class player extends Thread {
         return true;
     }
 
+    enum debugging {
+        toClient,
+        fromClient,
+        initiatingClient,
+        internalAlternatives
+    }
+
+    void logger(debugging logType, String log) {
+        switch (logType) {
+            case fromClient -> {
+                System.out.println("[Player Class]: [From Client]: " + log);
+            }
+            case toClient -> {
+                System.out.println("[Player Class]: [To Client]: " + log);
+            }
+            case initiatingClient -> {
+                System.out.println("[Initiating Client, ID " + ID + "]: " + log);
+            }
+            case internalAlternatives -> {
+                System.out.println("[Internal Error Corrections]: " + log);
+            }
+        }
+    }
+
+    int passes = 0;;
+
     public void run() {
         while (playerClient.isConnected()) {
             try {
                 String check = fromPlayer.readLine();
-                System.out.println(check);
-                if (check != null) {
-                    mainClass.allPlayerEventsNew.add(new JSONObject(check));
+                logger(debugging.fromClient, check);
+                if (check != null && isValid(check)) {
                     mainClass.allPlayerNewEventsRecorded.add(true);
-                    JSONObject newlyRecived = new JSONObject(fromPlayer.readLine()); // Recieve Player Command
+                    JSONObject newlyRecived = new JSONObject(check); // Recieve
+                    // Player Command
                     newlyRecived.put("ID", ID);
                     allPlayerEvents.add(newlyRecived); // Add to All Player Events
                     for (player multiList : mainClass.clientList) {
                         multiList.toPlayer.println(newlyRecived);
                     }
-                    if (mainClass.clientList.size() >= 1) {
-                        toPlayer.println(jo);
-                    }
                 }
-                mainClass.run();
+                if (ID == 0) {
+                    logger(debugging.internalAlternatives, "The Player Amount is 1, Adding a server Entity");
+                    mainClass.allPlayerEventsNew.add(jo);
+                    toPlayer.println(jo);
+                }
+                // mainClass.run();
             } catch (IOException e) {
                 // TODO Auto-generated catch block
+                this.stop();
+                mainClass.clientList.remove(ID);
                 e.printStackTrace();
             }
         }
