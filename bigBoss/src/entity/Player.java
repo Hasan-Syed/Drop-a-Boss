@@ -75,12 +75,16 @@ public class Player extends Entity {
     public void update() {
         // Player Direction
         if (keyH.upKey) {
+            gp.moveMade = true;
             myDirection = characterDirection.facingUp; // Change Player Direction UP
         } else if (keyH.downKey) {
+            gp.moveMade = true;
             myDirection = characterDirection.facingDown; // Change Player Direction DOWN
         } else if (keyH.leftKey) {
+            gp.moveMade = true;
             myDirection = characterDirection.facingLeft; // Change Player Direction LEFT
         } else if (keyH.rightKey) {
+            gp.moveMade = true;
             myDirection = characterDirection.facingRight; // Change Player Direction RIGHT
         }
 

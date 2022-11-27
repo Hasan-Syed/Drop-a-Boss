@@ -72,7 +72,9 @@ public class multiplayerBot extends Entity {
             maxHealth = (Double) botUpdate.getDouble("mH");
         }
         hitbox = new Rectangle(x, y, gp.tileSize, gp.tileSize);
+    }
 
+    public void update() {
         // Go through Sprites in a loop for loop animation
         {
             spriteSpeed++;

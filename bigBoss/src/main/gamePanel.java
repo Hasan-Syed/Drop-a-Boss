@@ -11,6 +11,7 @@ import java.util.List;
 
 import javax.swing.JPanel;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -44,6 +45,8 @@ public class gamePanel extends JPanel implements Runnable {
     final int FPS_CAP = 60;
     int FPS = 0;
 
+    public boolean moveMade = true;
+
     Thread gameThread; // Game Loop
     public CollisionChecker cChecker = new CollisionChecker(this);
     public mouseHandler mouseH = new mouseHandler();
@@ -64,7 +67,7 @@ public class gamePanel extends JPanel implements Runnable {
         this.addMouseListener(mouseH);
         this.addMouseMotionListener(mouseMotionH);
         setFocusable(true);
-        player = new Player(this, "unknown"); // Player
+        player = new Player(this, playerName); // Player
         hud = new HUD(this, player);
 
         try {
@@ -97,31 +100,41 @@ public class gamePanel extends JPanel implements Runnable {
 
     @Override
     public void run() {
-        double drawInterval = 1000000000 / FPS_CAP;
-        double delta = 0;
-        long lastTime = System.nanoTime();
-        long currentTime;
-        long timer = 0;
-        int drawCount = 0;
-
+        // Thread Sleep Method \\
         while (gameThread != null) {
-            if (multiplayer.playerConnect.isConnected()) {
-                multiplayer.toServerStr = player.entityJson().toString();
-                multiplayer.run();
-                JSONObject serverInput = new JSONObject(multiplayer.serverReturn);
-                if (serverInput.has("playerUpdate")) {
-                    boolean playerFound = false;
-                    int ID = serverInput.getInt("ID");
-                    for (multiplayerBot remoteEntity : multiplayerAIArray) {
-                        if (remoteEntity.ID == ID) {
-                            remoteEntity.update(serverInput);
-                            playerFound = true;
+            if (multiplayer.stillAlive) {
+                if (moveMade) {
+                    multiplayer.toServer = player.entityJson();
+                    multiplayer.writeServer();
+                    moveMade = false;
+                } else {
+                    JSONObject noMoveMade = new JSONObject();
+                    noMoveMade.put("noMovesMade", true);
+                    multiplayer.toServer = noMoveMade;
+                    multiplayer.writeServer();
+                }
+
+                multiplayer.readServer();
+                if (((String) multiplayer.fromServer) != null) {
+                    JSONArray serverInputArray = new JSONArray((String) multiplayer.fromServer);
+                    for (int index = 0; index != serverInputArray.length(); index++) {
+                        JSONObject serverInput = (JSONObject) serverInputArray.get(index);
+                        if (serverInput.has("playerUpdate")) {
+                            boolean playerFound = false;
+                            int ID = serverInput.getInt("ID");
+                            for (multiplayerBot remoteEntity : multiplayerAIArray) {
+                                if (remoteEntity.ID == ID) {
+                                    remoteEntity.update(serverInput);
+                                    playerFound = true;
+                                }
+                            }
+                            if (playerFound == false && ID != multiplayer.onlineID) {
+                                multiplayerBot remoteEntity = new multiplayerBot(this, ID);
+                                remoteEntity.update(serverInput);
+                                multiplayerAIArray.add(remoteEntity);
+                            }
                         }
-                    }
-                    if (playerFound == false && ID != multiplayer.onlineID) {
-                        multiplayerBot remoteEntity = new multiplayerBot(this, ID);
-                        remoteEntity.update(serverInput);
-                        multiplayerAIArray.add(remoteEntity);
+                        moveMade = false;
                     }
                 }
             }
@@ -137,11 +150,23 @@ public class gamePanel extends JPanel implements Runnable {
             }
         }
 
+        // double drawInterval = 1000000000 / FPS_CAP;
+        // double delta = 0;
+        // long lastTime = System.nanoTime();
+        // long currentTime;
+        // long timer = 0;
+        // int drawCount = 0;
+        //
         // while (gameThread != null) {
-        // if (multiplayer.playerConnect.isConnected()) {
-        // multiplayer.toServerStr = player.entityJson().toString();
-        // multiplayer.run();
-        // JSONObject serverInput = new JSONObject(multiplayer.serverReturn);
+        // if (multiplayer.stillAlive) {
+        // multiplayer.toServer = player.entityJson();
+        // multiplayer.writeServer();
+        //
+        // multiplayer.readServer();
+        // if (((String) multiplayer.fromServer) != null) {
+        // JSONArray serverInputArray = new JSONArray((String) multiplayer.fromServer);
+        // for (int index = 0; index != serverInputArray.length(); index++) {
+        // JSONObject serverInput = (JSONObject) serverInputArray.get(index);
         // if (serverInput.has("playerUpdate")) {
         // boolean playerFound = false;
         // int ID = serverInput.getInt("ID");
@@ -157,6 +182,11 @@ public class gamePanel extends JPanel implements Runnable {
         // multiplayerAIArray.add(remoteEntity);
         // }
         // }
+        // moveMade = false;
+        // }
+        // }
+        // // multiplayer.toServerStr = player.entityJson().toString();
+        // // multiplayer.run();
         // }
         //
         // currentTime = System.nanoTime();
@@ -183,6 +213,9 @@ public class gamePanel extends JPanel implements Runnable {
         hud.update();
         tileM.update(); // World Updates
         player.update(); // Update Player Information
+        for (multiplayerBot playerAI : multiplayerAIArray) {
+            playerAI.update();
+        }
     }
 
     public void paintComponent(Graphics g) {
