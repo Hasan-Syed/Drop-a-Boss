@@ -90,22 +90,6 @@ public class Entity {
     }
 
     // JSON of the Enitiy
-    public JSONObject initialEntity() {
-        JSONObject entityUpdateObject = new JSONObject();
-        {
-            JSONObject entityObject = new JSONObject();
-            entityObject.put("name", name);
-            entityObject.put("x", x);
-            entityObject.put("y", y);
-            entityObject.put("entityType", entityType.toString());
-            entityObject.put("cH", health);
-            entityObject.put("mH", maxHealth);
-            entityUpdateObject.put("initial Entity", entityObject);
-        }
-        return entityUpdateObject;
-    }
-
-    // JSON of the Enitiy
     public JSONObject entityJson() {
         JSONObject entityUpdateObject = new JSONObject();
         {

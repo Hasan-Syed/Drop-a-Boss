@@ -12,7 +12,7 @@ import java.net.UnknownHostException;
 import entity.Entity;
 import main.enums.responseTypeEnum;
 
-public class multiplayer implements Runnable {
+public class multiplayer {
     public int onlineID;
 
     public final String myIP = InetAddress.getLocalHost().getHostAddress();
@@ -27,11 +27,9 @@ public class multiplayer implements Runnable {
 
     public final Entity player;
 
-    public Object fromServer;
-    public Object toServer;
-
     public multiplayer(String IP, int PORT, Entity player) throws UnknownHostException, IOException {
         this.player = player;
+        System.out.println(IP);
         playerToServer = new Socket(IP, PORT); // Connect to the Server
         this.toServerReader = new PrintWriter(playerToServer.getOutputStream(), true); // Initialize Server Writer
         ServerToPlayer = serverListener.accept(); // Accept 'from Server' connection Offer
@@ -45,27 +43,20 @@ public class multiplayer implements Runnable {
     void init() throws NumberFormatException, IOException {
         // Get Player ID \\
         Logger(responseTypeEnum.toServer, "Reqeusting ID");
-        toServer = "id"; // Request Type
-        writeServer(); // Request
-        readServer(); // Read Server Response
-        onlineID = Integer.parseInt((String) fromServer); // Server Response
+        writeServer("id"); // Request
+        onlineID = Integer.parseInt((String) readServer()); // Server Assigned ID
         Logger(responseTypeEnum.fromServer, "your online ID: " + onlineID); // Log Server Interation
         // Sending Server Player Names \\
         Logger(responseTypeEnum.toServer, "Setting Player name on the Server");
-        toServer = "playerName"; // Request Type
-        writeServer(); // Send Player Name Request
-        toServer = player.name;
-        writeServer(); // Send Player Name
+        writeServer("playerName"); // Send Player Name Request
+        writeServer((String) player.name); // Send Player Name
         Logger(responseTypeEnum.fromServer, "Player Name Set"); // Log Server Interation
         // Send Player's Initial Entity \\
         Logger(responseTypeEnum.toServer, "Sending Player Entity");
-        toServer = "playerEntity"; // Request Type
-        writeServer(); // Send playerEntity Request to server
-        toServer = player.entityJson(); // Request Type
-        writeServer(); // Send Player Entity JSON
+        writeServer("playerEntity"); // Send playerEntity Request to server
+        writeServer((String) player.entityJson().toString()); // Send Player Entity JSON
         // Initialize Finished \\
-        toServer = "initComplete";
-        writeServer(); // Send End Init to server
+        writeServer("initComplete"); // Send End Init to server
         Logger(responseTypeEnum.toServer, "Initialization Finshed Start Game");
         stillAlive = true;
     }
@@ -81,34 +72,16 @@ public class multiplayer implements Runnable {
         }
     }
 
-    public void readServer() {
+    public Object readServer() {
         try {
-            fromServer = fromServerReader.readLine();
+            return fromServerReader.readLine();
         } catch (IOException e) {
             e.printStackTrace();
+            return null;
         }
     }
 
-    public void writeServer() {
+    public void writeServer(Object toServer) {
         toServerReader.println(toServer);
-    }
-
-    // public void closeConnection() {
-    // toServer.println("pleaseLeaveMeAlone");
-    // }
-
-    @Override
-    public void run() {
-        // boolean run = true;
-        // while (run) {
-        // try {
-        // toServer.println(toServerStr);
-        // serverReturn = fromServer.readLine();
-        // run = false;
-        // } catch (IOException e) {
-        // // TODO Auto-generated catch block
-        // e.printStackTrace();
-        // }
-        // }
     }
 }

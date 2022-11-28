@@ -79,9 +79,8 @@ public class abilityHeal extends abilityBase implements abilityCarcus {
             entityHeal.put("causedTo", multiPlayerEntities.ID);
             healJson.put("healObject", entityHeal);
         }
-        // gp.multiplayer.toServerStr = healJson.toString();
-        System.out.println(healJson.toString());
-        gp.multiplayer.run();
+        // gp.multiplayer.toServer = healJson.toString();
+        // gp.multiplayer.writeServer();
     }
 
     @Override

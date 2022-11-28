@@ -6,12 +6,12 @@ public class App extends JFrame {
 
     public gamePanel gamePanel;
 
-    public App(String playerName) {
+    public App(String playerName, String serverIP, int serverPort) {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setTitle("BIG BOSS");
         setResizable(true);
 
-        gamePanel = new gamePanel(playerName);
+        gamePanel = new gamePanel(playerName, serverIP, serverPort);
         add(gamePanel);
         pack();
 
@@ -21,16 +21,22 @@ public class App extends JFrame {
     }
 
     public static void main(String[] args) {
-        String playerName = "";
+        String playerName = "unknown";
+        String serverIP = "127.0.0.1";
+        int serverPort = 6969;
         try {
             if (args.length > 0) {
                 playerName = args[0];
+                serverIP = args[1];
+                serverPort = Integer.parseInt(args[2]);
             } else {
                 playerName = "unknown";
+                serverIP = "127.0.0.1";
+                serverPort = 6969;
             }
         } catch (Exception e) {
 
         }
-        new App(playerName);
+        new App(playerName, serverIP, serverPort);
     }
 }

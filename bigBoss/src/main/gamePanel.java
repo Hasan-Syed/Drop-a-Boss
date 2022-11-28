@@ -8,14 +8,15 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.awt.Canvas;
 
 import javax.swing.JPanel;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import HUD.HUD;
+import appliars.healAppliars.healObject;
 import entity.Player;
 import entity.multiplayerBot;
 import inputHandleing.KeyHandler;
@@ -24,7 +25,7 @@ import inputHandleing.mouseMotionHandler;
 import multiplayer.multiplayer;
 import tile.tileManager;
 
-public class gamePanel extends JPanel implements Runnable {
+public class gamePanel extends Canvas implements Runnable {
     // Multiplayer
     public multiplayer multiplayer;
     // Screen Settings
@@ -59,10 +60,10 @@ public class gamePanel extends JPanel implements Runnable {
 
     public List<multiplayerBot> multiplayerAIArray = new ArrayList<>();
 
-    public gamePanel(String playerName) {
+    public gamePanel(String playerName, String serverIP, int serverPort) {
         this.setPreferredSize(new Dimension(screenWidth, screenHeight)); // Set Screen Size
         this.setBackground(Color.BLACK); // Background Color;
-        this.setDoubleBuffered(true); // Paint Setting
+        // this.setDoubleBuffered(true); // Paint Setting
         this.addKeyListener(keyH); // Add Key Listener
         this.addMouseListener(mouseH);
         this.addMouseMotionListener(mouseMotionH);
@@ -71,7 +72,7 @@ public class gamePanel extends JPanel implements Runnable {
         hud = new HUD(this, player);
 
         try {
-            multiplayer = new multiplayer("25.10.205.149", 6969, player);
+            multiplayer = new multiplayer(serverIP, serverPort, player);
             // multiplayer.run();
         } catch (UnknownHostException e) {
             // TODO Auto-generated catch block
@@ -82,73 +83,131 @@ public class gamePanel extends JPanel implements Runnable {
         }
     }
 
-    public boolean isValid(String json) {
-        try {
-            new JSONObject(json);
-        } catch (JSONException e) {
-            return false;
-        }
-        return true;
-    }
-
     public void startGameThread() {
         gameThread = new Thread(this);
         gameThread.start();
     }
 
-    public boolean test = true;
-
     @Override
     public void run() {
-        // Thread Sleep Method \\
-        while (gameThread != null) {
-            if (multiplayer.stillAlive) {
-                if (moveMade) {
-                    multiplayer.toServer = player.entityJson();
-                    multiplayer.writeServer();
-                    moveMade = false;
-                } else {
-                    JSONObject noMoveMade = new JSONObject();
-                    noMoveMade.put("noMovesMade", true);
-                    multiplayer.toServer = noMoveMade;
-                    multiplayer.writeServer();
-                }
 
-                multiplayer.readServer();
-                if (((String) multiplayer.fromServer) != null) {
-                    JSONArray serverInputArray = new JSONArray((String) multiplayer.fromServer);
-                    for (int index = 0; index != serverInputArray.length(); index++) {
-                        JSONObject serverInput = (JSONObject) serverInputArray.get(index);
-                        if (serverInput.has("playerUpdate")) {
-                            boolean playerFound = false;
-                            int ID = serverInput.getInt("ID");
-                            for (multiplayerBot remoteEntity : multiplayerAIArray) {
-                                if (remoteEntity.ID == ID) {
-                                    remoteEntity.update(serverInput);
-                                    playerFound = true;
-                                }
-                            }
-                            if (playerFound == false && ID != multiplayer.onlineID) {
-                                multiplayerBot remoteEntity = new multiplayerBot(this, ID);
-                                remoteEntity.update(serverInput);
-                                multiplayerAIArray.add(remoteEntity);
-                            }
-                        }
+        long lastTime = System.nanoTime();
+        double amountOfTicks = 60.0;
+        double ns = 1000000000 / amountOfTicks;
+        double delta = 0;
+        long timer = System.currentTimeMillis();
+        int updates = 0;
+        int frames = 0;
+        while (true) {
+            long now = System.nanoTime();
+            delta += (now - lastTime) / ns;
+            lastTime = now;
+            while (delta >= 1) {
+
+                if (multiplayer.playerToServer.isConnected()) {
+                    if (moveMade) {
+                        multiplayer.writeServer((String) player.entityJson().toString());
                         moveMade = false;
+                    } else {
+                        JSONObject noMoveMade = new JSONObject();
+                        noMoveMade.put("noMovesMade", true);
+                        multiplayer.writeServer((String) noMoveMade.toString());
                     }
+
+                    // String readContent = (String) multiplayer.readServer();
+                    // if (readContent != null) {
+                    // JSONArray serverInputArray = new JSONArray(readContent);
+                    // for (int index = 0; index != serverInputArray.length(); index++) {
+                    // JSONObject serverInput = (JSONObject) serverInputArray.get(index);
+                    // if (serverInput.has("playerUpdate")) {
+                    // boolean playerFound = false;
+                    // int ID = serverInput.getInt("ID");
+                    // for (multiplayerBot remoteEntity : multiplayerAIArray) {
+                    // if (remoteEntity.ID == ID) {
+                    // remoteEntity.update(serverInput);
+                    // playerFound = true;
+                    // }
+                    // }
+                    // if (playerFound == false && ID != multiplayer.onlineID) {
+                    // multiplayerBot remoteEntity = new multiplayerBot(this, ID);
+                    // remoteEntity.update(serverInput);
+                    // multiplayerAIArray.add(remoteEntity);
+                    // }
+                    // }
+                    // if (serverInput.has("healObject")) {
+                    // new healObject(this, player, multiplayerAIArray, serverInput);
+                    // }
+                    // moveMade = false;
+                    // }
+                    // }
                 }
+
+                update();
+                updates++;
+                delta--;
             }
+            repaint();
+            frames++;
 
-            update(); // update gameInformation
-            repaint(); // draw Updates
-
-            try {
-                Thread.sleep(15);
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+            if (System.currentTimeMillis() - timer > 1000) {
+                timer += 1000;
+                System.out.println("FPS: " + frames + " TICKS: " + updates);
+                frames = 0;
+                updates = 0;
             }
         }
+
+        //// Thread Sleep Method \\
+        // while (gameThread != null) {
+        // update(); // update gameInformation
+        //
+        // if (multiplayer.playerToServer.isConnected()) {
+        // if (moveMade) {
+        // multiplayer.writeServer((String) player.entityJson().toString());
+        // moveMade = false;
+        // } else {
+        // JSONObject noMoveMade = new JSONObject();
+        // noMoveMade.put("noMovesMade", true);
+        // multiplayer.writeServer((String) noMoveMade.toString());
+        // }
+        //
+        // String readContent = (String) multiplayer.readServer();
+        // if (readContent != null) {
+        // JSONArray serverInputArray = new JSONArray(readContent);
+        // for (int index = 0; index != serverInputArray.length(); index++) {
+        // JSONObject serverInput = (JSONObject) serverInputArray.get(index);
+        // if (serverInput.has("playerUpdate")) {
+        // boolean playerFound = false;
+        // int ID = serverInput.getInt("ID");
+        // for (multiplayerBot remoteEntity : multiplayerAIArray) {
+        // if (remoteEntity.ID == ID) {
+        // remoteEntity.update(serverInput);
+        // playerFound = true;
+        // }
+        // }
+        // if (playerFound == false && ID != multiplayer.onlineID) {
+        // multiplayerBot remoteEntity = new multiplayerBot(this, ID);
+        // remoteEntity.update(serverInput);
+        // multiplayerAIArray.add(remoteEntity);
+        // }
+        // }
+        // if (serverInput.has("healObject")) {
+        // new healObject(this, player, multiplayerAIArray, serverInput);
+        // }
+        // moveMade = false;
+        // }
+        // }
+        // }
+        //
+        // repaint(); // draw Updates
+        //
+        // try {
+        // Thread.sleep(10);
+        // } catch (InterruptedException e) {
+        // // TODO Auto-generated catch block
+        // e.printStackTrace();
+        // }
+        // }
 
         // double drawInterval = 1000000000 / FPS_CAP;
         // double delta = 0;
@@ -209,7 +268,7 @@ public class gamePanel extends JPanel implements Runnable {
         // }
     }
 
-    public void update() {
+    private void update() {
         hud.update();
         tileM.update(); // World Updates
         player.update(); // Update Player Information

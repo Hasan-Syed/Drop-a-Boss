@@ -13,11 +13,20 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 public class player extends Thread {
-    JSONObject jo = new JSONObject(
-            "{\"playerUpdate\":{\"direction\":\"facingUp\",\"entityType\":\"ai\",\"name\":\"serverEntity\",\"x\":-10,\"y\":-10},\"ID\":99}");
+    /*
+     * These are Debug Logger Enums
+     */
+    enum debugging {
+        toClient,
+        fromClient,
+        initiatingClient,
+        internalAlternatives
+    }
+
     public List<JSONObject> playerEvents;
     public List<JSONObject> playerPositioningEvents;
     public List<JSONObject> playerAbilityEvents;
+    JSONArray playerCurrentEvent;
 
     public final App mainClass;
     public final int ID;
@@ -28,93 +37,113 @@ public class player extends Thread {
     public final Socket ServerToPlayer; // From Server Client
     public final PrintWriter toPlayerWriter; // From Server Client
 
-    Object fromPlayer;
-    Object toPlayer;
-
     public player(int ID, Socket player, List<JSONObject> playerEvents, App mainClass) throws IOException {
-        this.ID = ID;
-        this.mainClass = mainClass;
-        this.playerEvents = playerEvents;
-        this.playerPositioningEvents = new ArrayList<>();
-        this.playerAbilityEvents = new ArrayList<>();
+        this.ID = ID; // Assign Player instance an ID
+        this.mainClass = mainClass; // Forwording Main Class
+        this.playerEvents = playerEvents; // All Player Casted Events
+        this.playerPositioningEvents = new ArrayList<>(); // Player Movement Events
+        this.playerAbilityEvents = new ArrayList<>(); // Player Casted Ability Events
 
-        this.playerToServer = player;
+        this.playerToServer = player; // Player to Server
         logger(debugging.fromClient,
-                "Connected to IP: " + playerToServer.getInetAddress() + " The Entity has been given the ID: " + ID);
-        this.fromPlayerReader = new BufferedReader(new InputStreamReader(playerToServer.getInputStream()));
-        this.ServerToPlayer = new Socket(playerToServer.getInetAddress(), 7070);
-        logger(debugging.toClient, "[ID: " + ID + "]: Connected back to IP: " + playerToServer.getInetAddress());
-        this.toPlayerWriter = new PrintWriter(ServerToPlayer.getOutputStream(), true);
+                "Connected to IP: " + playerToServer.getInetAddress() + " The Entity has been given the ID: " + ID); // Log
+                                                                                                                     // Player
+                                                                                                                     // Connetion
+        this.fromPlayerReader = new BufferedReader(new InputStreamReader(playerToServer.getInputStream())); // Connect a
+                                                                                                            // Reader to
+                                                                                                            // Player to
+                                                                                                            // server'
+        logger(debugging.toClient, "[ID: " + ID + "]: Connected back to IP: " + playerToServer.getInetAddress()); // Log
+                                                                                                                  // Player's
+                                                                                                                  // Connection
+                                                                                                                  // IP
+        this.ServerToPlayer = new Socket(playerToServer.getInetAddress(), 7070); // Attempt to Connect to Player
+        logger(debugging.initiatingClient, "to Player Connection Status: " + ServerToPlayer.isConnected()); // to Player
+                                                                                                            // Connection
+                                                                                                            // Status
+        this.toPlayerWriter = new PrintWriter(ServerToPlayer.getOutputStream(), true); // Connect a writer to Server to
+                                                                                       // Player
 
-        init();
-        // this.allPlayerEvents = playerEvents;
-        // this.mainClass = mainClass;
-        // logger(debugging.initiatingClient, "[Server Join]: " + player + " has joined
-        // as ID: '" + ID + "'");
+        init(); // Initialize Player
+        this.setName(playerName + "'s Online Thread");
+        this.start(); // Start Player Connection Thread
     }
 
-    void readPlayer() {
+    /*
+     * the Method void readPlayer() is used to read Player Events to the Server
+     */
+    private Object readPlayer() {
         try {
-            fromPlayer = fromPlayerReader.readLine();
+            return fromPlayerReader.readLine(); // Try to Read From Player Events
         } catch (IOException e) {
             e.printStackTrace();
             this.stop();
+            return null;
         }
     }
 
-    void writePlayer() {
+    /*
+     * The Method void writePlayer() is used to Write Events to the Player
+     */
+    private void writePlayer(Object toPlayer) {
         toPlayerWriter.println(toPlayer);
     }
 
+    /*
+     * The Method void init() is used to Initialize Player to the Server
+     */
     void init() {
-        boolean initializing = true;
-        readPlayer();
+        boolean initializing = true; // While this is true Keep Looping
         while (initializing) {
-            switch (new String((String) fromPlayer)) {
+            /*
+             * The Following Switch block is used to Initialize the Players Client, and the
+             * Server
+             */
+            switch (new String((String) readPlayer())) {
                 case "id" -> {
-                    toPlayer = ID; // Set Player ID to Sender
-                    writePlayer(); // Send the ID's
+                    writePlayer(ID); // Send the ID's
                 }
                 case "playerName" -> {
-                    readPlayer(); // Wait for Player Name to be sent
-                    playerName = (String) fromPlayer; // Get Playername
+                    // Wait for Player Name to be sent
+                    playerName = (String) readPlayer(); // Get Playername
                 }
                 case "playerEntity" -> {
-                    readPlayer(); // Wait for Player Name to be sent
-                    if (isValid((String) fromPlayer)) {
-                        JSONObject player = new JSONObject((String) fromPlayer);
+                    Object Entity = (String) readPlayer(); // Wait for Player Name to be sent
+                    System.out.println(Entity);
+                    if (isValid((String) Entity)) {
+                        JSONObject player = new JSONObject((String) Entity);
                         player.put("ID", ID);
                         playerPositioningEvents.add(player); // Add Player's Event
                         // System.out.println(fromPlayer);
                     }
                 }
+                // case "initComplete" means that the player is done sending Init Information
                 case "initComplete" -> {
-                    initializing = false;
+                    initializing = false; // Ser initializing to false, and quit the init loop
+                    logger(debugging.fromClient, "Initialization Finished");
                 }
             }
-            if (initializing) {
-                readPlayer();
-            }
+            // If initializing is true keep reciving init information from Players
+            // if (initializing) {
+            // readPlayer(); // Read Player Events
+            // }
         }
-        this.start();
     }
 
+    /*
+     * the Method isValid is used to Varify if the given Sting can be a JSON
+     * the method returns true if it can be a JSON
+     */
     public boolean isValid(String json) {
         try {
-            new JSONObject(json);
+            new JSONObject(json); // Try to parse the String as a JsonObject
         } catch (JSONException e) {
-            return false;
+            return false; // The parse failed return false
         }
-        return true;
+        return true; // the parse was successful return true
     }
 
-    enum debugging {
-        toClient,
-        fromClient,
-        initiatingClient,
-        internalAlternatives
-    }
-
+    // This is a Logger so yea...
     void logger(debugging logType, String log) {
         switch (logType) {
             case fromClient -> {
@@ -132,42 +161,86 @@ public class player extends Thread {
         }
     }
 
+    /*
+     * The "sendMe" variable is has a heavy involvement in the sending of player
+     * commands
+     * 
+     * The Server Recives all kinds of commands from the client such as
+     * 
+     * "playerUpdate", "abilityEvent", "noMovesMade"
+     * 
+     * when the Command is "noMovesMade", the sever doesnt send the Player Postion
+     * to other clients since they are redundent
+     */
     boolean sendMe = true;
+    boolean abilityEventMade = false;
 
+    /*
+     * The Method Run keeps contacting Players, getting their locaion and updaing
+     * locations on other Clients
+     * 
+     * this method also updates and applies Abilities
+     */
     public void run() {
         while (true) {
-            readPlayer();
+            Object fromPlayer = readPlayer(); // Read Player Command
+            // If the ReadPlayer isnt null
             if (fromPlayer != null) {
-                JSONObject Event = new JSONObject((String) fromPlayer);
+                JSONObject Event = new JSONObject((String) fromPlayer); // Parse JSONObject on Player Command
+                // If the Command is "playerUpdate", then
+                // get the command slap on the Player ID,
+                // and add it to both playerPositioningEvents, and playerEvents List
+                // set "sendMe" to true so player information is sent to other clients
                 if (Event.has("playerUpdate")) {
                     Event.put("ID", ID);
                     playerPositioningEvents.add(Event);
                     playerEvents.add(Event);
                     sendMe = true;
                 }
-                if (Event.has("abilityEvent")) {
+                // If the Command is "abilityEvent", then
+                // get the Event and put it on both the playerPositioningEvents, and
+                // playerEvents List
+                if (Event.has("healObject")) {
                     playerAbilityEvents.add(Event);
                     playerEvents.add(Event);
+                    abilityEventMade = true;
                 }
+                // If the Command is "noMovesMade", then
+                // Set the "sendMe" to false, so playerInformation
+                // is not sent to other clients
                 if (Event.has("noMovesMade")) {
                     sendMe = false;
                 }
             }
+            /*
+             * If the Player index is higher then one
+             * then setup The Player JSON Array to be sent to other clients
+             */
             if (mainClass.playerIndex >= 1) {
-                JSONArray playerSpawns = new JSONArray();
+                playerCurrentEvent = new JSONArray(); // ReInitialize the JSONArray to Empty the Array
+                // Gather all other Player Movement Events to be Sent
+                // All gathered events will be added up to a JsonArray
+                // to be Sent to the Client Alltogether.
                 for (player players : mainClass.clientList) {
+                    // If the ID of the player isn't the same as the ID of this player, Add their
+                    // Movement Events to the JSONArray
                     if (players.ID != ID) {
-                        playerSpawns
+                        playerCurrentEvent
                                 .put(players.playerPositioningEvents.get(players.playerPositioningEvents.size() - 1));
                     }
+                    // If the ID of the player is the same as the ID of this player and Send me is
+                    // true, Add the player's Movement Events to the Movement Array
+                    // Otherwise send nothing
                     if (players.ID == ID && sendMe) {
-                        playerSpawns
+                        playerCurrentEvent
                                 .put(players.playerPositioningEvents.get(players.playerPositioningEvents.size() - 1));
                     }
                 }
-                toPlayer = (JSONArray) playerSpawns;
-                System.out.println(toPlayer);
-                writePlayer();
+                if (abilityEventMade) {
+                    playerCurrentEvent
+                            .put(playerEvents.get(playerEvents.size() - 1));
+                }
+                writePlayer((JSONArray) playerCurrentEvent); // Send to Client
             }
         }
     }
