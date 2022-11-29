@@ -23,6 +23,8 @@ public class player extends Thread {
         internalAlternatives
     }
 
+    public JSONObject currentMovementObject;
+
     public List<JSONObject> playerEvents;
     public List<JSONObject> playerPositioningEvents;
     public List<JSONObject> playerAbilityEvents;
@@ -66,7 +68,8 @@ public class player extends Thread {
 
         init(); // Initialize Player
         this.setName(playerName + "'s Online Thread");
-        this.start(); // Start Player Connection Thread
+        this.start(); // Start Player Connection
+        //////////////////////////////////// Thread
     }
 
     /*
@@ -123,10 +126,6 @@ public class player extends Thread {
                     logger(debugging.fromClient, "Initialization Finished");
                 }
             }
-            // If initializing is true keep reciving init information from Players
-            // if (initializing) {
-            // readPlayer(); // Read Player Events
-            // }
         }
     }
 
@@ -172,7 +171,7 @@ public class player extends Thread {
      * when the Command is "noMovesMade", the sever doesnt send the Player Postion
      * to other clients since they are redundent
      */
-    boolean sendMe = true;
+    public boolean sendMe = true;
     boolean abilityEventMade = false;
 
     /*
@@ -182,66 +181,15 @@ public class player extends Thread {
      * this method also updates and applies Abilities
      */
     public void run() {
+        Object fromPlayer;
         while (true) {
-            Object fromPlayer = readPlayer(); // Read Player Command
-            // If the ReadPlayer isnt null
-            if (fromPlayer != null) {
-                JSONObject Event = new JSONObject((String) fromPlayer); // Parse JSONObject on Player Command
-                // If the Command is "playerUpdate", then
-                // get the command slap on the Player ID,
-                // and add it to both playerPositioningEvents, and playerEvents List
-                // set "sendMe" to true so player information is sent to other clients
-                if (Event.has("playerUpdate")) {
-                    Event.put("ID", ID);
-                    playerPositioningEvents.add(Event);
-                    playerEvents.add(Event);
-                    sendMe = true;
-                }
-                // If the Command is "abilityEvent", then
-                // get the Event and put it on both the playerPositioningEvents, and
-                // playerEvents List
-                if (Event.has("healObject")) {
-                    playerAbilityEvents.add(Event);
-                    playerEvents.add(Event);
-                    abilityEventMade = true;
-                }
-                // If the Command is "noMovesMade", then
-                // Set the "sendMe" to false, so playerInformation
-                // is not sent to other clients
-                if (Event.has("noMovesMade")) {
-                    sendMe = false;
-                }
+            fromPlayer = readPlayer(); // Read Player Command
+            currentMovementObject = new JSONObject((String) fromPlayer).put("ID", ID);
+            // Sending Player Info
+            for (player client : mainClass.clientList) {
+                writePlayer(client.currentMovementObject);
             }
-            /*
-             * If the Player index is higher then one
-             * then setup The Player JSON Array to be sent to other clients
-             */
-            if (mainClass.playerIndex >= 1) {
-                playerCurrentEvent = new JSONArray(); // ReInitialize the JSONArray to Empty the Array
-                // Gather all other Player Movement Events to be Sent
-                // All gathered events will be added up to a JsonArray
-                // to be Sent to the Client Alltogether.
-                for (player players : mainClass.clientList) {
-                    // If the ID of the player isn't the same as the ID of this player, Add their
-                    // Movement Events to the JSONArray
-                    if (players.ID != ID) {
-                        playerCurrentEvent
-                                .put(players.playerPositioningEvents.get(players.playerPositioningEvents.size() - 1));
-                    }
-                    // If the ID of the player is the same as the ID of this player and Send me is
-                    // true, Add the player's Movement Events to the Movement Array
-                    // Otherwise send nothing
-                    if (players.ID == ID && sendMe) {
-                        playerCurrentEvent
-                                .put(players.playerPositioningEvents.get(players.playerPositioningEvents.size() - 1));
-                    }
-                }
-                if (abilityEventMade) {
-                    playerCurrentEvent
-                            .put(playerEvents.get(playerEvents.size() - 1));
-                }
-                writePlayer((JSONArray) playerCurrentEvent); // Send to Client
-            }
+            writePlayer("finished");
         }
     }
 }//

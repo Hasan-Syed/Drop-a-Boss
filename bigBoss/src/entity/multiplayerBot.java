@@ -49,11 +49,9 @@ public class multiplayerBot extends Entity {
     }
 
     // update JSON
-    public void update(JSONObject botUpdate) {
+    public synchronized void update(JSONObject botUpdate) {
         if (botUpdate.has("playerUpdate")) {
             botUpdate = (JSONObject) botUpdate.getJSONObject("playerUpdate");
-        } else {
-            botUpdate = (JSONObject) botUpdate.getJSONObject("Initial Entity");
         }
 
         name = (String) botUpdate.getString("name");
@@ -117,7 +115,7 @@ public class multiplayerBot extends Entity {
         addSprite(spriteAdrs.downSpriteAdrs, downSpriteAdrs); // Load Right Sprites
     }
 
-    public void draw(Graphics2D g2d) {
+    public synchronized void draw(Graphics2D g2d) {
         BufferedImage currentSpriteImg = null;
         {
             switch (myDirection) {

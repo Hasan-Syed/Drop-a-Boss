@@ -38,8 +38,11 @@ public class App extends Thread {
         }
     }
 
+    @Override
+    public void run() {
+    }
+
     public static void main(String[] args) throws Exception {
-        new App().start();
-        // app.start();
+        new App();
     }
 }

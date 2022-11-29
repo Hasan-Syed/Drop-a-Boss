@@ -9,10 +9,15 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import entity.Entity;
+import entity.multiplayerBot;
+import main.gamePanel;
 import main.enums.responseTypeEnum;
 
-public class multiplayer {
+public class multiplayer extends Thread {
     public int onlineID;
 
     public final String myIP = InetAddress.getLocalHost().getHostAddress();
@@ -26,10 +31,12 @@ public class multiplayer {
     public final BufferedReader fromServerReader; // Data from Server
 
     public final Entity player;
+    public final gamePanel gp;
 
-    public multiplayer(String IP, int PORT, Entity player) throws UnknownHostException, IOException {
+    public multiplayer(String IP, int PORT, Entity player, gamePanel gp) throws UnknownHostException, IOException {
         this.player = player;
-        System.out.println(IP);
+        this.gp = gp;
+        this.setName("Multiplayer Thread");
         playerToServer = new Socket(IP, PORT); // Connect to the Server
         this.toServerReader = new PrintWriter(playerToServer.getOutputStream(), true); // Initialize Server Writer
         ServerToPlayer = serverListener.accept(); // Accept 'from Server' connection Offer
@@ -83,5 +90,51 @@ public class multiplayer {
 
     public void writeServer(Object toServer) {
         toServerReader.println(toServer);
+    }
+
+    public boolean isValid(String json) {
+        try {
+            new JSONObject(json); // Try to parse the String as a JsonObject
+        } catch (JSONException e) {
+            return false; // The parse failed return false
+        }
+        return true; // the parse was successful return true
+    }
+
+    public void run() {
+        while (true) {
+            writeServer(player.entityJson());
+
+            Object serverInput = readServer();
+
+            while (serverInput != "finished") {
+                serverInput = (String) readServer();
+                if (isValid((String) serverInput)) {
+                    JSONObject playerUpdate = new JSONObject((String) serverInput);
+                    int remoteID = (int) playerUpdate.get("ID");
+                    if (playerUpdate.has("playerUpdate")) {
+                        playerUpdate = playerUpdate.getJSONObject("playerUpdate");
+                        if (remoteID != onlineID) {
+                            boolean playerFound = false;
+                            for (multiplayerBot playerBot : gp.multiplayerAIArray) {
+                                if (playerBot.ID == remoteID) {
+                                    playerFound = true;
+                                    playerBot.update(playerUpdate);
+                                }
+                            }
+                            if (!playerFound) {
+                                multiplayerBot playerBot = new multiplayerBot(gp, remoteID);
+                                playerBot.update(playerUpdate);
+                                gp.multiplayerAIArray.add(playerBot);
+                            }
+                        }
+                    }
+                }
+                if (serverInput.equals("finished")) {
+                    break;
+                }
+                gp.repaint();
+            }
+        }
     }
 }
