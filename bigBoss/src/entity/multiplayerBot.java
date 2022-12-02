@@ -154,7 +154,8 @@ public class multiplayerBot extends Entity {
                 g2d.fill(health);
             }
             g2d.setColor(Color.white);
-            g2d.drawString("health: " + health, x + 90, y);
+            g2d.drawString("player Name + Health: " + name + ", " + String.format("%,.2f", health), x - 40, y - 30);
+            g2d.drawString("ID: " + ID, x - 40, y - 20);
         }
     }
 }

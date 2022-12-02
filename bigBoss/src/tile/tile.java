@@ -16,12 +16,16 @@ public class tile {
     public collisionPenalty penalty = collisionPenalty.none;
     public int negHealth, negSpeed = 0;
 
-    // load tile Image
+    /**
+     * loadTile() is used to load a tile
+     * 
+     * @param tileAddress is the tile address
+     */
     public void loadTile(String tileAddress) {
         try {
-            tile = ImageIO.read(new File(tileAddress));
+            tile = ImageIO.read(new File(tileAddress)); // Load the Tile Image
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(); // Print Error
         }
     }
 }

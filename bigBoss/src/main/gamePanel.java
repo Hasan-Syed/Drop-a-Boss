@@ -68,6 +68,7 @@ public class gamePanel extends JPanel implements Runnable {
 
         try {
             multiplayer = new multiplayer(serverIP, serverPort, player, this);
+            player.ID = multiplayer.onlineID;
             multiplayer.start();
         } catch (UnknownHostException e) {
             // TODO Auto-generated catch block
@@ -114,6 +115,8 @@ public class gamePanel extends JPanel implements Runnable {
 
         // Draw World;
         tileM.draw(g2d);
+        // Draw HUD
+        hud.draw(g2d);
         // Draw Player
         player.draw(g2d);
         // Draw Multiplayer Players
@@ -122,7 +125,7 @@ public class gamePanel extends JPanel implements Runnable {
                 playerAI.draw(g2d);
             }
         }
-        g2d.drawString("Multiplayer Enttities: " + multiplayerAIArray.size(), maxScreenCol, ABORT);
+        g2d.drawString("Multiplayer Entities: " + multiplayerAIArray.size(), maxScreenCol, ABORT);
         g2d.dispose();
     }
 }

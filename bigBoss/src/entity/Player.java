@@ -4,6 +4,9 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
+import abilities.abilityBase;
+import abilities.abilityCarcus;
+import abilities.Abilities.abilityFlash;
 import abilities.Abilities.abilityHeal;
 import inputHandleing.KeyHandler;
 import inputHandleing.mouseHandler;
@@ -17,7 +20,7 @@ public class Player extends Entity {
     KeyHandler keyH; // Key Settings
     mouseMotionHandler mouseMotionH;
     mouseHandler mouseH;
-    abilityHeal ah = new abilityHeal(this);
+    abilityCarcus ah = new abilityFlash(this);
 
     public Player(gamePanel gp, String name) {
         super(gp);
@@ -98,10 +101,6 @@ public class Player extends Entity {
             ah.abilityUse();
         }
 
-        if (!keyH.ability[0]) {
-            ah.abilityArmed = false;
-        }
-
         // Collision Detection
         collision = false; // Current Collision is false
         gp.cChecker.checkTile(this); // Check for Collision
@@ -154,6 +153,10 @@ public class Player extends Entity {
         }
         ah.draw(g2d); // Draw abilityHeal
         g2d.drawImage(currentSpriteImg, x, y, gp.tileSize, gp.tileSize, null); // Draw Players
-        g2d.drawString("myHealth: " + String.format("%,.2f", health), x, y - 30);
+        g2d.drawString("player Name + Health: " + name + ", " + String.format("%,.2f", health), x - 40, y - 30);
+        g2d.drawString("ID: " + ID, x - 40, y - 20);
+
+        gp.hud.draw(g2d);
+
     }
 }

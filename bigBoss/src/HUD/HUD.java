@@ -34,9 +34,8 @@ public class HUD extends JPanel {
         }
     }
 
-    public void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        Graphics2D g2d = (Graphics2D) g;
+    public void draw(Graphics2D g2d) {
+        g2d.create();
         g2d.setColor(Color.GRAY);
         g2d.fillRect(0, 0, 250, 125);
         // HEALTH

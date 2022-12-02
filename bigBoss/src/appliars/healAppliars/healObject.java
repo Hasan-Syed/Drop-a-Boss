@@ -17,6 +17,7 @@ public class healObject {
     int instantHeal;
     double maxHeal;
     double healDuration;
+    public healThread healThead;
 
     public healObject(gamePanel gp, Entity player, List<multiplayerBot> multiplayerAIArray, JSONObject healObject) {
         this.gp = gp;
@@ -24,6 +25,7 @@ public class healObject {
         this.multiplayerAIArray = multiplayerAIArray;
         this.healObject = healObject.getJSONObject("healObject");
         System.out.println("Healer Initialized");
+        System.out.println(healObject);
         getHealParams();
     }
 
@@ -46,6 +48,7 @@ public class healObject {
                     System.out.println(remotePlayer.name + ", " + remotePlayer.ID);
                     if (remotePlayer.ID == causedTo) {
                         applyHeal(remotePlayer);
+                        entityFound = true;
                     }
                 }
             }
@@ -56,11 +59,12 @@ public class healObject {
     }
 
     public void applyHeal(Entity target) {
+        System.out.println("Heal Target: " + target.name);
         if (!((target.health + instantHeal) > target.maxHealth)) {
             target.health += instantHeal;
         }
-        healThread ht = new healThread(target, maxHeal, healDuration);
+        healThead = new healThread(target, maxHeal, healDuration);
         Timer timer = new Timer();
-        timer.scheduleAtFixedRate(ht, 1000, 1000);
+        timer.scheduleAtFixedRate(healThead, 1000, 1000);
     }
 }
