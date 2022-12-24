@@ -9,20 +9,27 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import appliars.healAppliars.healObject;
 import entity.Entity;
 import entity.multiplayerBot;
 import main.gamePanel;
 import main.enums.responseTypeEnum;
 
+/**
+ * The Multiplayer Class Connects to the Server and Updates, Casts Abilities of
+ * Targets on the Entities on remote Casters Behalfs.
+ * 
+ * @author Hasan Syed
+ * @version 1.2
+ */
 public class multiplayer extends Thread {
     public int onlineID;
 
     public final String myIP = InetAddress.getLocalHost().getHostAddress();
-    public final ServerSocket serverListener = new ServerSocket(7070);
+    public final ServerSocket serverListener = new ServerSocket(6868);
 
     public Boolean stillAlive = false;
 
@@ -31,15 +38,16 @@ public class multiplayer extends Thread {
     public final Socket ServerToPlayer; // Data from server
     public final BufferedReader fromServerReader; // Data from Server
 
+    public JSONObject dataToBeSent;
+
     public final Entity player;
     public final gamePanel gp;
 
     /**
      * 
-     * @param IP     The IP Address the Server is listening on
-     * @param PORT   The Port the Server is listening on
-     * @param player The Player Entity
-     * @param gp     The Game Panel
+     * @param IP   The IP Address the Server is listening on
+     * @param PORT The Port the Server is listening on
+     * @param gp   The Game Panel
      * @throws UnknownHostException The UnknownHostException can be thrown when:
      *                              The server not Running,
      *                              Incorrect IP,
@@ -58,10 +66,12 @@ public class multiplayer extends Thread {
         playerToServer = new Socket(IP, PORT); // Connect to the Server
         this.toServerReader = new PrintWriter(playerToServer.getOutputStream(), true); // Initialize Server Writer
         ServerToPlayer = serverListener.accept(); // Accept 'from Server' connection Offer
+        System.out.print(ServerToPlayer);
         this.fromServerReader = new BufferedReader(new InputStreamReader(ServerToPlayer.getInputStream())); // Initialize
                                                                                                             // Server
                                                                                                             // Response
                                                                                                             // Reader
+        dataToBeSent = new JSONObject();
         init();
     }
 
@@ -86,7 +96,12 @@ public class multiplayer extends Thread {
         // Send Player's Initial Entity \\
         Logger(responseTypeEnum.toServer, "Sending Player Entity");
         writeServer("playerEntity"); // Send playerEntity Request to server
-        writeServer((String) player.entityJson().toString()); // Send Player Entity JSON
+        writeServer((String) player.getEntityJSON().toString()); // Send Player Entity JSON
+        // Get Abilities \\
+        Logger(responseTypeEnum.toServer, "Asking for Abilities");
+        writeServer("abilities"); // Send playerEntity Request to server
+        String json = (String) readServer();
+        gp.abilities = new JSONArray(json);
         // Initialize Finished \\
         writeServer("initComplete"); // Send End Init to server
         Logger(responseTypeEnum.toServer, "Initialization Finshed Start Game");
@@ -117,7 +132,7 @@ public class multiplayer extends Thread {
      * @return whatever the server Sends it is returned as a Object, it can later be
      *         casted as needed
      */
-    public Object readServer() {
+    public synchronized Object readServer() {
         try {
             return fromServerReader.readLine(); // Read from Server
         } catch (IOException e) {
@@ -131,8 +146,9 @@ public class multiplayer extends Thread {
      * 
      * @param toServer the Object is send to the server
      */
-    public void writeServer(Object toServer) {
+    public synchronized void writeServer(Object toServer) {
         toServerReader.println(toServer); // Write to Server
+        dataToBeSent.clear();
     }
 
     /**
@@ -164,71 +180,56 @@ public class multiplayer extends Thread {
      */
     public void run() {
         while (true) {
+            dataToBeSent.put("playerUpdate", player.getEntityJSON());
+            dataToBeSent.put("castedAbility", player.entityCastedAbilities());
             /*
              * Send the Current 'Players main Entity' the Server
              */
-            writeServer(player.entityJson());
+            writeServer(new JSONObject().put("gameUpdate", dataToBeSent));
             /*
-             * The Following Code Reads the Server Send Items and applies them Acordingly
+             * Read Server Input
              */
-            Object serverInput = readServer(); // Read Server send Item
-            /*
-             * Check if the Server Input is "finished", it is so the client doesn't get
-             * stuck attempting to get other players data
-             */
-            while (serverInput != "finished") {
-                serverInput = (String) readServer();
-                if (isValid((String) serverInput)) {
-                    // *Parse the serverInput as a JsonObject
-                    JSONObject command = new JSONObject((String) serverInput);
-                    /*
-                     * * From here each if Statment is Checks for will check if the JSONObject
-                     * contains their respected Keys
-                     */
-                    // * Checks if the read Command has a "playerUpdate" JSON object in it
-                    if (command.has("playerUpdate")) {
-                        int remoteID = (int) command.get("ID"); // *Get and Parse Player ID from the server
-                        // * Get the Player Object from the Command 'playerUpdate'
-                        JSONObject playerUpdate = command.getJSONObject("playerUpdate");
-                        /**
-                         * * Check if the JsonObject ID is the same as the client ID
-                         */
-                        if (remoteID != onlineID) {
-                            boolean playerFound = false; // * Verifies the the Player is found */
-                            /*
-                             * Loops through all multiplayer Enties Checking if the Player with the remote
-                             * ID can be found
-                             */
-                            for (multiplayerBot remoteSpawnedPlayer : gp.multiplayerAIArray) {
-                                // * If the ID is found the Update Player Entity */
-                                if (remoteSpawnedPlayer.ID == remoteID) {
-                                    playerFound = true; // The Player is Found so the new entity is not Spawned
-                                    // Update the 'remoteSpawnedPlayer' entity
-                                    remoteSpawnedPlayer.update(playerUpdate);
+            JSONObject gameUpdate = new JSONObject((String) readServer());
+            {
+                /**
+                 * Reading (remote) player updates, updating the (remote) Players;
+                 * 1. Location
+                 * 2. (min/max) Health Value
+                 * 3. (min/max) Mana/Power Values (not implemented yet)
+                 * 4. (facing) Direction
+                 * 5. entity type
+                 */
+                if (gameUpdate.has("playerUpdate")) {
+                    JSONArray playerUpdates = gameUpdate.getJSONArray("playerUpdate");
+                    for (Object playerObject : playerUpdates) {
+                        JSONObject playerUpdate = (JSONObject) playerObject;
+                        if (playerUpdate.has("ID") && (playerUpdate.getInt("ID") != onlineID)) {
+                            int ID = playerUpdate.getInt("ID");
+                            boolean found = false;
+                            for (multiplayerBot bot : gp.multiplayerAIArray) {
+                                if (bot.ID == ID) {
+                                    bot.setEntityUpdate(playerUpdate);
+                                    found = true;
                                 }
                             }
-                            /*
-                             * If the Player is not found Spawn a new entity in to the world
-                             */
-                            if (!playerFound) {
-                                // Make a new multiplayerBot, it will be sent the gamePanel, the the remoteID
-                                multiplayerBot playerBot = new multiplayerBot(gp, remoteID);
-                                playerBot.update(playerUpdate); // Send the new Player the JSON Object
-                                gp.multiplayerAIArray.add(playerBot); // Add the Player to the multiplayerList for
-                                                                      // future Updates
-                                Logger(responseTypeEnum.fromServer, "New Player Spawned " + playerBot.name);
+                            if (!found) {
+                                multiplayerBot mb = new multiplayerBot(gp, ID);
+                                mb.setEntityUpdate(playerUpdate);
+                                gp.multiplayerAIArray.add(mb);
                             }
                         }
                     }
-
-                    // * Checks if the read Command has a "healObject" JSON object in it
-                    if (command.has("healObject")) {
-                        new healObject(gp, player, gp.multiplayerAIArray, command); // create a new healObject on Client
-                    }
                 }
-                // ! incase the server input is "finished" quit out of the loop, there is no new
-                if (serverInput.equals("finished")) {
-                    break; // ! Break out of the Loop
+                /*
+                 * Abilities
+                 */
+                // Check if the gameUpdate has castedAbility
+                if (gameUpdate.has("castedAbility")) {
+                    JSONArray castedAbility = gameUpdate.getJSONArray("castedAbility");
+                    for (var index = 0; index < castedAbility.length(); index++) {
+                        System.out.println(gp.player.healthManipulate.addToQueue(castedAbility.getJSONObject(index)));
+                        castedAbility.remove(index);
+                    }
                 }
             }
         }

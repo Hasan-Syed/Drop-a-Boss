@@ -47,4 +47,36 @@ public class enums {
         fromServer,
         toServer
     }
+
+    public enum abilityCostType {
+        mana,
+        power,
+        health
+    }
+
+    public enum loadType {
+        list,
+        single
+    }
+
+    public enum multiplayerQueueType {
+        playerUpdate,
+        castedAbility
+    }
+
+    public enum entityLogger {
+        getEntity,
+        setEntity,
+        loadSprites
+    }
+
+    public enum appliarsObjectLogger {
+        addToQueue,
+        initializeTimer
+    }
+
+    public enum abilityAppliar {
+        healthObject,
+        fuelObject
+    }
 }

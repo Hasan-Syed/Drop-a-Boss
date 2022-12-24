@@ -1,13 +1,15 @@
 package entity;
 
+// External Libraries
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 
-import abilities.abilityBase;
-import abilities.abilityCarcus;
-import abilities.Abilities.abilityFlash;
-import abilities.Abilities.abilityHeal;
+// Internal Libraries
+import abilities.Ability.ability;
 import inputHandleing.KeyHandler;
 import inputHandleing.mouseHandler;
 import inputHandleing.mouseMotionHandler;
@@ -16,11 +18,27 @@ import main.enums.characterDirection;
 import main.enums.entityTypeEnum;
 import main.enums.spriteAdrs;
 
+/**
+ * Player Class
+ * 
+ * @author Hasan Syed
+ * @version 1.2
+ * @see Entity
+ */
 public class Player extends Entity {
     KeyHandler keyH; // Key Settings
     mouseMotionHandler mouseMotionH;
     mouseHandler mouseH;
-    abilityCarcus ah = new abilityFlash(this);
+
+    String file = "resources\\abilityResources\\healAbility.json";
+
+    public void loadAbility(ability ability) {
+        abilities.add(ability);
+    }
+
+    public static String readFileAsString(String file) throws Exception {
+        return new String(Files.readAllBytes(Paths.get(file)));
+    }
 
     public Player(gamePanel gp, String name) {
         super(gp);
@@ -28,6 +46,7 @@ public class Player extends Entity {
         this.mouseMotionH = gp.mouseMotionH;
         this.mouseH = gp.mouseH;
         this.name = name;
+        this.abilities = new ArrayList<ability>();
 
         init(); // Initialize Entity Back End
         setDefaultValues(); // Set Defaults
@@ -37,13 +56,15 @@ public class Player extends Entity {
     // Player Default Values
     public void setDefaultValues() {
         entityType = entityTypeEnum.player;
-        maxHealth = 100;
-        health = 5;
-        x = 100;
-        y = 100;
-        speed = 4;
+        maxMana = 1000;
+        mana = 50;
+        maxHealth = 1000;
+        health = 500;
+        position.x = 100;
+        position.y = 100;
+        speed = 5;
         myDirection = characterDirection.facingUp;
-        hitbox = new Rectangle(20, 10, 24, 32);
+        hitbox = new Rectangle(18, 20, 22, 16);
     }
 
     // Player Sprite Asses
@@ -76,29 +97,33 @@ public class Player extends Entity {
 
     // Graphics Updates and Draw Method
     public void update() {
+        healthManipulate.update();
+        // Update ScreenSize
+        screenX = gp.screenSize.width / 2 - (gp.tileSize / 2);
+        screenY = gp.screenSize.height / 2 - (gp.tileSize / 2);
         // Player Direction
         if (keyH.upKey) {
-            gp.moveMade = true;
             myDirection = characterDirection.facingUp; // Change Player Direction UP
         } else if (keyH.downKey) {
-            gp.moveMade = true;
             myDirection = characterDirection.facingDown; // Change Player Direction DOWN
         } else if (keyH.leftKey) {
-            gp.moveMade = true;
             myDirection = characterDirection.facingLeft; // Change Player Direction LEFT
         } else if (keyH.rightKey) {
-            gp.moveMade = true;
             myDirection = characterDirection.facingRight; // Change Player Direction RIGHT
         }
 
-        ah.update(); // Update Ability Heal <test>
-
-        if (keyH.ability[0]) {
-            ah.abilityArm();
-        }
-
-        if (mouseH.leftClick) {
-            ah.abilityUse();
+        int abilityIndex = 0;
+        for (ability abilityArm : abilities) {
+            if (keyH.ability.get(abilityIndex)) {
+                abilityArm.abilityArm();
+            }
+            if (!keyH.ability.get(abilityIndex)) {
+                abilityArm.abilityDisArm();
+            }
+            if (mouseH.leftClick) {
+                abilities.get(abilityIndex).abilityUse();
+            }
+            abilityIndex++;
         }
 
         // Collision Detection
@@ -107,13 +132,13 @@ public class Player extends Entity {
         // Update Player's Position
         if (!collision) { // If the player isn't Collided
             if (keyH.upKey) {
-                y -= speed; // Move UP
+                position.y -= speed; // Move UP
             } else if (keyH.downKey) {
-                y += speed; // Move DOWN
+                position.y += speed; // Move DOWN
             } else if (keyH.leftKey) {
-                x -= speed; // Move LEFT
+                position.x -= speed; // Move LEFT
             } else if (keyH.rightKey) {
-                x += speed; // Move RIGHT
+                position.x += speed; // Move RIGHT
             }
         }
 
@@ -128,6 +153,10 @@ public class Player extends Entity {
                 }
                 spriteSpeed = 0;
             }
+        }
+        // update Abilities
+        for (ability ability : abilities) {
+            ability.update();
         }
     }
 
@@ -151,12 +180,11 @@ public class Player extends Entity {
                 default -> throw new IllegalArgumentException("Unexpected value: " + myDirection);
             }
         }
-        ah.draw(g2d); // Draw abilityHeal
-        g2d.drawImage(currentSpriteImg, x, y, gp.tileSize, gp.tileSize, null); // Draw Players
-        g2d.drawString("player Name + Health: " + name + ", " + String.format("%,.2f", health), x - 40, y - 30);
-        g2d.drawString("ID: " + ID, x - 40, y - 20);
-
-        gp.hud.draw(g2d);
-
+        g2d.drawImage(currentSpriteImg, screenX, screenY, gp.tileSize, gp.tileSize, null); // Draw Players
+        g2d.draw(hitbox);
+        // Draw Abilities
+        for (ability ability : abilities) {
+            ability.draw(g2d);
+        }
     }
 }

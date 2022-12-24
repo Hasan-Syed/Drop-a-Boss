@@ -27,7 +27,7 @@ public class tileManager {
         this.gp = gp;
         this.mouseMotionH = mouseMotionH;
         Tiles = new ArrayList<>();
-        mapTileNum = new int[gp.maxWorldCol][gp.worldHeight];
+        mapTileNum = new int[gp.maxWorldCol][gp.maxWorldRow];
         sides = new ArrayList<>();
         loadTiles();
         loadMap("resources\\dataResources\\maps\\map01.txt");
@@ -129,31 +129,51 @@ public class tileManager {
     }
 
     public void draw(Graphics2D g2d) {
-        int worldX = 0;
-        int worldY = 0;
-
-        // Camera
-        switch (gp.player.camera) {
-            case locked -> {
-                int screenX = (gp.screenWidth / 2) - gp.player.x;
-                int screenY = (gp.screenHeight / 2) - gp.player.y;
-                // gp.player.worldX = screenX;
-                // gp.player.worldY = screenY;
-                g2d.translate(screenX, screenY);
-            }
-            case unlocked -> {
-
-            }
-        }
+        g2d.create();
+        // World Building
+        // int worldX = 0;
+        // int worldY = 0;
+        // gp.cameraViewX = (int) (gp.screenSize.getWidth() / 2) - gp.player.x;
+        // gp.cameraViewY = (int) (gp.screenSize.getHeight() / 2) - gp.player.y;
+        ////// Camera
+        // switch (gp.player.camera) {
+        // case locked -> {
+        // g2d.translate(gp.cameraViewX, gp.cameraViewY);
+        // }
+        // case unlocked -> {
+        //
+        // }
+        // }
         // MAP
-        for (int windowCol = 0; windowCol != gp.maxWorldCol; windowCol++) {
-            worldY = 0;
-            for (int windowRow = 0; windowRow != gp.maxWorldRow; windowRow++) {
-                int tileID = mapTileNum[windowCol][windowRow];
-                g2d.drawImage(Tiles.get(tileID).tile, worldX, worldY, gp.tileSize, gp.tileSize, gp);
-                worldY += gp.tileSize;
+        int worldCol = 0;
+        int worldRow = 0;
+
+        while (worldCol < gp.maxWorldCol && worldRow < gp.maxWorldRow) {
+            int tile = mapTileNum[worldCol][worldRow];
+
+            int worldX = worldCol * gp.tileSize;
+            int worldY = worldRow * gp.tileSize;
+            int screenX = worldX - gp.player.position.x + gp.player.screenX;
+            int screenY = worldY - gp.player.position.y + gp.player.screenY;
+
+            g2d.drawImage(Tiles.get(tile).tile, screenX, screenY, gp.tileSize,
+                    gp.tileSize, null);
+            worldCol++;
+
+            if (worldCol == gp.maxWorldCol) {
+                worldCol = 0;
+                worldRow++;
             }
-            worldX += gp.tileSize;
         }
+        // for (int windowCol = 0; windowCol != gp.maxWorldCol; windowCol++) {
+        // worldY = 0;
+        // for (int windowRow = 0; windowRow != gp.maxWorldRow; windowRow++) {
+        // int tileID = mapTileNum[windowCol][windowRow];
+        // g2d.drawImage(Tiles.get(tileID).tile, worldX, worldY, gp.tileSize,
+        // gp.tileSize, gp);
+        // worldY += gp.tileSize;
+        // }
+        // worldX += gp.tileSize;
+        // }
     }
 }

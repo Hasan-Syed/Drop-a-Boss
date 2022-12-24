@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<contains>FBI</contains>
+<contains>CSB</contains>
+<FBI>
+	<agents>
+		<name>Hasan</name>
+		<maxHealth>500</maxHealth>
+		<fuelType>Mana</fuelType>
+		<maxMana>500</maxMana>
+		<maxSpeed>4</maxSpeed>
+		<availableAbilities>flash</availableAbilities>
+		<interactableWith>
+			<agency>FBI</agency>
+			<agentName>Rockhard15</agentName>
+		</interactableWith>
+		<interactableWith>
+			<agency>CSB</agency>
+			<agentName>Rockhard15</agentName>
+		</interactableWith>
+		<sprites />
+		<voiceLines />
+	</agents>
+	<agents>
+		<name>Rockhard15</name>
+		<maxHealth>200</maxHealth>
+		<fuelType>Power</fuelType>
+		<maxPower>1000</maxPower>
+		<maxSpeed>10</maxSpeed>
+		<availableAbilities>heal</availableAbilities>
+		<availableAbilities>flash</availableAbilities>
+		<availableAbilities>teleport</availableAbilities>
+		<interactableWith>
+			<agency>FBI</agency>
+			<agentName>Hasan</agentName>
+		</interactableWith>
+		<sprites />
+		<voiceLines />
+	</agents>
+</FBI>
+<CSB>
+	<agents>
+		<name>Rayyan</name>
+		<maxHealth>650</maxHealth>
+		<fuelType>Mana</fuelType>
+		<maxMana>500</maxMana>
+		<maxSpeed>5</maxSpeed>
+		<availableAbility>heal</availableAbility>
+		<interactableWith>
+			<agency>FBI</agency>
+			<agentName>Hasan</agentName>
+		</interactableWith>
+	</agents>
+</CSB>

@@ -7,7 +7,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
-
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -24,8 +24,6 @@ public class player extends Thread {
         internalAlternatives
     }
 
-    public JSONObject commandFromPlayer;
-
     public List<JSONObject> playerEvents;
     public List<JSONObject> playerPositioningEvents;
     public List<JSONObject> playerAbilityEvents;
@@ -34,10 +32,16 @@ public class player extends Thread {
     public final int ID;
     public String playerName;
 
+    public JSONArray serverCastedAbilities = new JSONArray();
+
     public final Socket playerToServer; // To Server Client
     public final BufferedReader fromPlayerReader; // To Server Client
     public final Socket ServerToPlayer; // From Server Client
     public final PrintWriter toPlayerWriter; // From Server Client
+
+    public JSONObject updateRecived;
+    public JSONObject updateToBeSent = new JSONObject();
+    public JSONArray castedAbilities = new JSONArray();
 
     /**
      * 
@@ -55,25 +59,18 @@ public class player extends Thread {
         this.playerAbilityEvents = new ArrayList<>(); // Player Casted Ability Events
 
         this.playerToServer = player; // Player to Server
+        // Log Player Connetion
         logger(debugging.fromClient,
-                "Connected to IP: " + playerToServer.getInetAddress() + " The Entity has been given the ID: " + ID); // Log
-                                                                                                                     // Player
-                                                                                                                     // Connetion
-        this.fromPlayerReader = new BufferedReader(new InputStreamReader(playerToServer.getInputStream())); // Connect a
-                                                                                                            // Reader to
-                                                                                                            // Player to
-                                                                                                            // server'
-        logger(debugging.toClient, "[ID: " + ID + "]: Connected back to IP: " + playerToServer.getInetAddress()); // Log
-                                                                                                                  // Player's
-                                                                                                                  // Connection
-                                                                                                                  // IP
-        this.ServerToPlayer = new Socket(playerToServer.getInetAddress(), 7070); // Attempt to Connect to Player
-        logger(debugging.initiatingClient, "to Player Connection Status: " + ServerToPlayer.isConnected()); // to Player
-                                                                                                            // Connection
-                                                                                                            // Status
-        this.toPlayerWriter = new PrintWriter(ServerToPlayer.getOutputStream(), true); // Connect a writer to Server to
-                                                                                       // Player
-
+                "Connected to IP: " + playerToServer.getInetAddress() + " The Entity has been given the ID: " + ID);
+        // Connect a Reader to Player to server
+        this.fromPlayerReader = new BufferedReader(new InputStreamReader(playerToServer.getInputStream()));
+        // Log Player's Connection IP
+        logger(debugging.toClient, "[ID: " + ID + "]: Connected back to IP: " + playerToServer.getInetAddress());
+        this.ServerToPlayer = new Socket(playerToServer.getInetAddress(), 6868); // Attempt to Connect to Player
+        // to Player Connection Status
+        logger(debugging.initiatingClient, "to Player Connection Status: " + ServerToPlayer.isConnected());
+        // Connect a writer to Server to Player
+        this.toPlayerWriter = new PrintWriter(ServerToPlayer.getOutputStream(), true);
         init(); // Initialize Player
         this.setName(playerName + "'s Online Thread");
         this.start(); // Start Player Connection
@@ -99,7 +96,7 @@ public class player extends Thread {
     /*
      * The Method void writePlayer() is used to Write Events to the Player
      */
-    private void writePlayer(Object toPlayer) {
+    public void writePlayer(Object toPlayer) {
         toPlayerWriter.println(toPlayer); // Write to Player
     }
 
@@ -123,13 +120,14 @@ public class player extends Thread {
                 }
                 case "playerEntity" -> {
                     Object Entity = (String) readPlayer(); // Wait for Player Name to be sent
-                    System.out.println(Entity);
                     if (isValid((String) Entity)) {
                         JSONObject player = new JSONObject((String) Entity);
                         player.put("ID", ID);
                         playerPositioningEvents.add(player); // Add Player's Event
-                        // System.out.println(fromPlayer);
                     }
+                }
+                case "abilities" -> {
+                    writePlayer(mainClass.abilityList); // Add Player's Event
                 }
                 // case "initComplete" means that the player is done sending Init Information
                 case "initComplete" -> {
@@ -154,7 +152,7 @@ public class player extends Thread {
     }
 
     // This is a Logger so yea...
-    void logger(debugging logType, String log) {
+    void logger(debugging logType, Object log) {
         switch (logType) {
             case fromClient -> {
                 System.out.println("[Player Class]: [From Client]: " + log);
@@ -177,28 +175,52 @@ public class player extends Thread {
      * 
      * this method also updates and applied Abilities
      */
-    public void run() {
+    public synchronized void run() {
         Object fromPlayer;
         while (true) {
             fromPlayer = readPlayer(); // Read Player Command
-            commandFromPlayer = new JSONObject((String) fromPlayer);
-            // *If the commandFromPlayer has "playerUpdate"
-            if (commandFromPlayer.has("playerUpdate")) {
-                commandFromPlayer.put("ID", ID); // Slap-on the Player ID on the Player Update
-                // Loop Through the Client List
-                for (player client : mainClass.clientList) {
-                    writePlayer(client.commandFromPlayer); // Send the Player Update to the Player
+            updateRecived = new JSONObject((String) fromPlayer);
+            updateToBeSent.clear();
+
+            for (player player : mainClass.clientList) {
+                JSONObject playerUpdateMulti = player.updateRecived;
+                if (playerUpdateMulti != null) {
+                    playerUpdateMulti = playerUpdateMulti.getJSONObject("gameUpdate");
+                    // Get player Update and put it on the List
+                    if (updateToBeSent.has("playerUpdate") && playerUpdateMulti.has("playerUpdate")) {
+                        updateToBeSent.getJSONArray("playerUpdate")
+                                .put(playerUpdateMulti.getJSONObject("playerUpdate"));
+                    } else if (playerUpdateMulti.has("playerUpdate")) {
+                        updateToBeSent.put("playerUpdate",
+                                new JSONArray().put(playerUpdateMulti.getJSONObject("playerUpdate")));
+                    }
+                    // Get casted Ability and put it on the List
+                    if (playerUpdateMulti.has("castedAbility")
+                            && !playerUpdateMulti.getJSONArray("castedAbility").isEmpty()) {
+                        System.out.println(playerUpdateMulti);
+                        JSONArray remoteCasted = playerUpdateMulti.getJSONArray("castedAbility");
+                        for (Object castedAbility : remoteCasted) {
+                            JSONObject ability = (JSONObject) castedAbility;
+                            JSONObject impact = ability.getJSONObject("impact");
+                            int targetID = impact.getInt("causedTo");
+                            player target = mainClass.clientList.get(targetID);
+                            target.castedAbilities.put(ability);
+                        }
+                    }
                 }
             }
-            // *If the CommandFromPlayer has "ability"
-            if (commandFromPlayer.has("ability")) {
-                // Loop Through the Client List
-                for (player client : mainClass.clientList) {
-                    writePlayer(client.commandFromPlayer); // Send the Ability to All Players
+            if (!castedAbilities.isEmpty()) {
+                for (var index = 0; index < castedAbilities.length(); index++) {
+                    if (updateToBeSent.has("castedAbility")) {
+                        updateToBeSent.getJSONArray("castedAbility").put(castedAbilities.get(index));
+                    } else {
+                        updateToBeSent.put("castedAbility", new JSONArray().put(castedAbilities.get(index)));
+                    }
                 }
+                castedAbilities.clear();
+                ;
             }
-            writePlayer("finished"); // Write to Player "Finished", This ends the Loop the Player is Trapped in, for
-                                     // more player updates
+            writePlayer(updateToBeSent);
         }
     }
 }

@@ -2,6 +2,12 @@ package main;
 
 import entity.Entity;
 
+/**
+ * Handles Collision
+ * 
+ * @author Hasan Syed
+ * @version 1.0
+ */
 public class CollisionChecker {
     gamePanel gp;
 
@@ -10,10 +16,10 @@ public class CollisionChecker {
     }
 
     public void checkTile(Entity entity) {
-        int entityLeftWorldX = entity.x + entity.hitbox.x;
-        int entityRightWorldX = entity.x + entity.hitbox.x + entity.hitbox.width;
-        int entityTopWorldY = entity.y + entity.hitbox.y;
-        int entityBottomWorldY = entity.y + entity.hitbox.y + entity.hitbox.height;
+        int entityLeftWorldX = entity.position.x + entity.hitbox.x;
+        int entityRightWorldX = entity.position.x + entity.hitbox.x + entity.hitbox.width;
+        int entityTopWorldY = entity.position.y + entity.hitbox.y;
+        int entityBottomWorldY = entity.position.y + entity.hitbox.y + entity.hitbox.height;
 
         int entityLeftCol = entityLeftWorldX / gp.tileSize;
         int entityRightCol = entityRightWorldX / gp.tileSize;

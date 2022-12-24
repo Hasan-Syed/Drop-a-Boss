@@ -6,6 +6,12 @@ import javax.swing.SwingUtilities;
 
 import java.awt.event.MouseEvent;
 
+/**
+ * Handles Mouse Inputs
+ * 
+ * @author Hasan Syed
+ * @version 1.0
+ */
 public class mouseHandler implements MouseListener {
     public int mouseX, mouseY;
     public boolean rightClick, leftClick;

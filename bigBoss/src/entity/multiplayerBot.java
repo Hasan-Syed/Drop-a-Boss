@@ -1,23 +1,23 @@
 package entity;
 
+// External Libraries
 import java.awt.Graphics2D;
-import java.awt.Color;
-import java.awt.TexturePaint;
-import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-
 import javax.imageio.ImageIO;
-
-import org.json.JSONObject;
-
-import main.enums;
+// Internal Libraries
 import main.gamePanel;
 import main.enums.characterDirection;
 import main.enums.spriteAdrs;
-import main.enums.entityTypeEnum;;
 
+/**
+ * multiplayerBot, is a entity that is controlled by remote player inputs
+ * 
+ * @author Hasan Syed
+ * @version 1.2
+ * @see Entity
+ */
 public class multiplayerBot extends Entity {
 
     BufferedImage test;
@@ -42,37 +42,13 @@ public class multiplayerBot extends Entity {
     public void setDefaultValues() {
         maxHealth = 10;
         health = 10;
-        x = 100;
-        y = 100;
+        position.x = 100;
+        position.y = 100;
         speed = 4;
         myDirection = characterDirection.facingUp;
     }
 
-    // update JSON
-    public synchronized void update(JSONObject botUpdate) {
-        if (botUpdate.has("playerUpdate")) {
-            botUpdate = (JSONObject) botUpdate.getJSONObject("playerUpdate");
-        }
-
-        name = (String) botUpdate.getString("name");
-        x = (int) botUpdate.getInt("x");
-        y = (int) botUpdate.getInt("y");
-        if (botUpdate.has("direction")) {
-            myDirection = (characterDirection) botUpdate.getEnum(enums.characterDirection.class, "direction");
-        }
-        if (botUpdate.has("entityType")) {
-            entityType = (entityTypeEnum) botUpdate.getEnum(enums.entityTypeEnum.class, "entityType");
-        }
-        if (botUpdate.has("cH")) {
-            health = (Double) botUpdate.getDouble("cH");
-        }
-        if (botUpdate.has("mH")) {
-            maxHealth = (Double) botUpdate.getDouble("mH");
-        }
-        hitbox = new Rectangle(x, y, gp.tileSize, gp.tileSize);
-    }
-
-    public void update() {
+    public synchronized void update() {
         // Go through Sprites in a loop for loop animation
         {
             spriteSpeed++;
@@ -87,7 +63,7 @@ public class multiplayerBot extends Entity {
         }
     }
 
-    // Player Sprite Asses
+    // Player Sprite Assets
     public void loadSpriteAssets() {
         // set up Left Sprites Addresses
         leftSpriteAdrs.add("resources\\playerSprites\\current\\lWalkRun_0.png");
@@ -131,31 +107,14 @@ public class multiplayerBot extends Entity {
                 case facingRight -> {
                     currentSpriteImg = rightSprite.get(currentSprite);
                 }
-                default -> throw new IllegalArgumentException("Unexpected value: " + myDirection);
             }
         }
-        g2d.drawImage(currentSpriteImg, x, y, gp.tileSize, gp.tileSize, null);
-        // g2d.drawString(name, x + 5, y);
 
-        // Health
-        {
-            double scale = gp.tileSize / maxHealth;
-            double healthVal = scale * health;
-            // HEALTH
-            {
-                g2d.setColor(Color.black);
-                g2d.fillRect(x, (y + gp.tileSize), gp.tileSize, 7);
-                // g2d.setColor(new TexturePaint());
-                // g2d.fillRect(x, (y + gp.tileSize), (int) healthVal, 5);
-                Rectangle health = new Rectangle(x, (y + gp.tileSize), (int) healthVal, 5);
-                TexturePaint spe = new TexturePaint(test, health);
-                g2d.setPaint(spe);
-                // g2d.draw(health);
-                g2d.fill(health);
-            }
-            g2d.setColor(Color.white);
-            g2d.drawString("player Name + Health: " + name + ", " + String.format("%,.2f", health), x - 40, y - 30);
-            g2d.drawString("ID: " + ID, x - 40, y - 20);
-        }
+        int screenX = position.x - gp.player.position.x + gp.player.screenX;
+        int screenY = position.y - gp.player.position.y + gp.player.screenY;
+
+        g2d.drawString("Health: " + health, screenX, screenY - 10);
+
+        g2d.drawImage(currentSpriteImg, screenX, screenY, gp.tileSize, gp.tileSize, gp);
     }
 }

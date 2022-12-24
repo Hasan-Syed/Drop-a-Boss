@@ -1,12 +1,30 @@
 package inputHandleing;
 
 import java.awt.event.KeyListener;
+import java.util.ArrayList;
+import java.util.List;
 import java.awt.event.KeyEvent;
 
+/**
+ * Handles Keyboards Inputs
+ * 
+ * @author Hasan Syed
+ * @version 1.0
+ */
 public class KeyHandler implements KeyListener {
 
     public boolean upKey, downKey, leftKey, rightKey; // Character movement Keys
-    public Boolean[] ability = { false, false, false, false };
+    public List<Boolean> ability = new ArrayList<>();
+
+    public KeyHandler() {
+        init();
+    }
+
+    void init() {
+        ability.add(false);
+        ability.add(false);
+        ability.add(false);
+    }
 
     @Override
     public void keyTyped(KeyEvent e) {
@@ -28,8 +46,14 @@ public class KeyHandler implements KeyListener {
             case KeyEvent.VK_D -> {
                 rightKey = true;
             }
-            case KeyEvent.VK_SPACE -> {
-                ability[0] = true;
+            case KeyEvent.VK_1 -> {
+                ability.set(0, true);
+            }
+            case KeyEvent.VK_2 -> {
+                ability.set(1, true);
+            }
+            case KeyEvent.VK_3 -> {
+                ability.set(2, true);
             }
         }
     }
@@ -50,8 +74,14 @@ public class KeyHandler implements KeyListener {
             case KeyEvent.VK_D -> {
                 rightKey = false;
             }
-            case KeyEvent.VK_SPACE -> {
-                ability[0] = false;
+            case KeyEvent.VK_1 -> {
+                ability.set(0, false);
+            }
+            case KeyEvent.VK_2 -> {
+                ability.set(1, false);
+            }
+            case KeyEvent.VK_3 -> {
+                ability.set(2, false);
             }
         }
     }

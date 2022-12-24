@@ -1,0 +1,71 @@
+{
+    "contains" : ["FBI", "CSB"],
+    "FBI": {
+      "agents": [
+        {
+          "name": "Hasan",
+          "maxHealth": 500,
+          "fuelType" : "Mana",
+          "maxMana": 500,
+          "maxSpeed": 4,
+          "availableAbilities": [
+            "flash"
+          ],
+          "interactableWith": [
+            {
+              "agency": "FBI",
+              "agentName": "Rockhard15"
+            },
+            {
+              "agency": "CSB",
+              "agentName": "Rockhard15"
+            }
+          ],
+          "sprites": {},
+          "voiceLines" : {}
+        },
+        {
+          "name": "Rockhard15",
+          "maxHealth": 200,
+          "fuelType" : "Power",
+          "maxPower": 1000,
+          "maxSpeed": 10,
+          "availableAbilities": [
+            "heal",
+            "flash",
+            "teleport"
+          ],
+          "interactableWith": [
+            {
+              "agency": "FBI",
+              "agentName": "Hasan"
+            }
+          ],
+          "sprites": {},
+          "voiceLines" : {}
+        }
+      ]
+    },
+    "CSB" : {
+      "agents" : [
+        {
+          "name" : "Rayyan",
+          "maxHealth" : 650,
+          "fuelType" : "Mana",
+          "maxMana" : 500,
+          "maxSpeed" : 5,
+          "availableAbility" : [
+            "heal"
+          ],
+          "interactableWith" : [
+            {
+              "agency" : "FBI",
+              "agentName" : "Hasan"
+            }
+          ],
+          "sprites" : {},
+          "voiceLines" : {}
+        }
+      ]
+    }
+  }

@@ -1,0 +1,57 @@
+{
+  "abilities": [
+    {
+      "Name": "Flash",
+      "Description": "The Flash abilty allows you to flash towords the mouse cursor",
+      "cooldowns": {
+        "cooldown": 10
+      },
+      "abilityRanges": {
+        "jumpRange": 100
+      },
+      "abilityCosts": {
+        "abilityCostType": "health",
+        "abilityCost": 10
+      },
+      "abilitySprites": {
+        "hudBorder": "resources\\hudResources\\abilityBorderSquare.png",
+        "icon": "resources\\abilitySprite\\AbilityIcon\\Flash.png",
+        "startLocation": [],
+        "finishLocation": []
+      },
+      "miscellaneous": {
+      }
+    },
+    {
+      "Name": "Heal",
+      "Description": "The heal abilty allows the initiator to heal players with in the range (yellow circle), The use of heal will temporarily debuff the initiator's health, all healings on the initiator player will stopped for a limitied amount of time. The Initiator will will recover the lost health over a set amount of time \n\n If the initiator heals with no one in their range, the initiator will not recover the lost health",
+      "cooldowns": {
+        "cooldown": 10
+      },
+      "abilityRanges": {
+        "healRangeCircle": 500
+      },
+      "abilityCosts": {
+        "abilityCostType": "health",
+        "abilityCost": 50
+      },
+      "abilitySprites": {
+        "hudBorder": "resources\\hudResources\\abilityBorderSquare.png",
+        "icon": "resources\\abilitySprite\\AbilityIcon\\Heal.png",
+        "startLocation": [],
+        "finishLocation": []
+      },
+      "miscellaneous": {
+        "heal" :{
+          "instant": 20,
+          "slowHeal": 30,
+          "duration" : 10
+        },
+        "initiatorHealthTaxReturn": {
+          "durationHold": 10,
+          "durationHeal": 10
+        }
+      }
+    }
+  ]
+}

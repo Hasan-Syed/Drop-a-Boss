@@ -1,0 +1,42 @@
+{
+    "flashAbility": {
+      "Name": "Flash",
+      "Description": "The Flash abilty allows you to flash towords the mouse cursor",
+      "cooldowns": {
+        "cooldown": 10
+      },
+      "abilityRanges": {
+        "jumpRange": 100
+      },
+      "abilityCosts": {
+        "abilityCostType": "health",
+        "abilityCost": 10
+      },
+      "abilitySprites": {
+        "hudBorder": "resources\\hudResources\\abilityBorderSquare.png",
+        "icon": "resources\\abilitySprite\\AbilityIcon\\Flash.png",
+        "flashStart": [],
+        "flashFinish": []
+      }
+    },
+    "healAbility" : {
+      "Name" : "Heal",
+      "Description" : "The heal abilty allows heal players with in the range of the yellow circle around you",
+      "cooldowns": {
+
+      },
+      "abilityRanges": {
+      },
+      "abilityCosts": {
+        "abilityCostType": "health",
+        "abilityCost": 10
+      },
+      "abilitySprites": {
+        "icon": [
+          ""
+        ],
+        "flashStart": [],
+        "flashFinish": []
+      }
+    }
+}
